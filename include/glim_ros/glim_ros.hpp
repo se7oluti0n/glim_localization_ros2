@@ -37,7 +37,7 @@ public:
 
   const std::vector<std::shared_ptr<GenericTopicSubscription>>& extension_subscriptions();
 
-private:
+protected:
   std::unique_ptr<glim::TimeKeeper> time_keeper;
   std::unique_ptr<glim::CloudPreprocessor> preprocessor;
 
