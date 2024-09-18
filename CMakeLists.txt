@@ -30,6 +30,7 @@ endif()
 ### glim_ros ###
 ament_auto_add_library(glim_ros SHARED
   src/glim_ros/glim_ros.cpp
+  src/glim_ros/glim_localization.cpp
 )
 target_include_directories(glim_ros PUBLIC
   include
@@ -48,6 +49,13 @@ ament_auto_add_executable(glim_rosnode
   src/glim_rosnode.cpp
 )
 target_link_libraries(glim_rosnode
+  glim_ros
+)
+
+ament_auto_add_executable(glim_localization
+  src/glim_roslocalization.cpp
+)
+target_link_libraries(glim_localization
   glim_ros
 )
 
