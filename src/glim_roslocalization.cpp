@@ -21,7 +21,7 @@ int main(int argc, char** argv) {
   glim->get_parameter<std::string>("dump_path", dump_path);
 
   glim->wait();
-  glim->save(dump_path);
+  // glim->save(dump_path);
 
   return 0;
 }

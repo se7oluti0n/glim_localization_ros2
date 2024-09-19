@@ -84,7 +84,7 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
 void RvizViewer::set_callbacks() {
   using std::placeholders::_1;
   OdometryEstimationCallbacks::on_new_frame.add(std::bind(&RvizViewer::odometry_new_frame, this, _1));
-  GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
+  LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
 }
 
 void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) {
@@ -284,7 +284,7 @@ void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& sub
     // Publish global map every 10 seconds
     const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
     if (now - last_globalmap_pub_time < std::chrono::seconds(10)) {
-      return;
+      // return;
     }
     last_globalmap_pub_time = now;
 

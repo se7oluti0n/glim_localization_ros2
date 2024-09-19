@@ -23,10 +23,25 @@ GlimLocalization::GlimLocalization(const rclcpp::NodeOptions& options) :
   initial_pose_sub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
       "/initialpose", 10, std::bind(&GlimLocalization::handle_initial_pose, this, _1));
 
+  load_srv = this->create_service<std_srvs::srv::Trigger>(
+    "~/load_map", std::bind(&GlimLocalization::handle_load_map_sevice, this,
+    std::placeholders::_1, std::placeholders::_2));
+
+   map_path =
+      glim::Config(glim::GlobalConfig::get_config_path("config_global_mapping")).param<std::string>("global_mapping", "map_path", "/home/manh/glim_ws/dump");
 }
 
 GlimLocalization::~GlimLocalization() {
   GlimROS::~GlimROS();
+}
+
+void GlimLocalization::handle_load_map_sevice(
+  const std_srvs::srv::Trigger::Request::SharedPtr request,
+  std_srvs::srv::Trigger::Response::SharedPtr response)
+{
+
+  global_mapping->load(map_path);
+  response->success = true;
 }
 
 void GlimLocalization::handle_initial_pose(
