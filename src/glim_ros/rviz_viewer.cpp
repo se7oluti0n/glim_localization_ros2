@@ -84,7 +84,8 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
 void RvizViewer::set_callbacks() {
   using std::placeholders::_1;
   OdometryEstimationCallbacks::on_new_frame.add(std::bind(&RvizViewer::odometry_new_frame, this, _1));
-  LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
+  LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::on_localization_submap, this, _1));
+  GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
 }
 
 void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) {
@@ -258,6 +259,39 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
   }
 }
 
+
+void RvizViewer::on_localization_submap(const std::vector<SubMap::Ptr>& prebuilt_submaps) {
+  invoke([this, prebuilt_submaps]{
+    std::mt19937 mt;
+
+    int total_num_points = 0;
+    for (const auto& submap : prebuilt_submaps) {
+      total_num_points += submap->frame->size();
+    }
+
+    // Concatenate all the submap points
+    gtsam_points::PointCloudCPU::Ptr merged(new gtsam_points::PointCloudCPU);
+    merged->num_points = total_num_points;
+    merged->points_storage.resize(total_num_points);
+    merged->points = merged->points_storage.data();
+
+    int begin = 0;
+    for (int i = 0; i < prebuilt_submaps.size(); i++) {
+      const auto& submap = prebuilt_submaps[i];
+      std::transform(submap->frame->points, submap->frame->points + submap->frame->size(), merged->points + begin,
+        [&](const Eigen::Vector4d& p) { return submap->T_world_origin * p; });
+      begin += submap->frame->size();
+    }
+
+    auto downsampled = gtsam_points::random_sampling(merged, 0.05, mt);
+
+    const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+    auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *downsampled);
+    map_pub->publish(*points_msg);
+  });
+}
+
+
 void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& submaps) {
   const SubMap::ConstPtr latest_submap = submaps.back();
 
@@ -275,41 +309,47 @@ void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& sub
 
   // Invoke a submap concatenation task in the RvizViewer thread
   invoke([this, latest_submap, submap_poses] {
-    this->submaps.push_back(latest_submap->frame);
+    // if (this->submaps.size() >= 3) {
+    //   this->submaps.pop_front();
+    // }
+    // this->submaps.push_back(latest_submap->frame);
 
-    if (!map_pub->get_subscription_count()) {
-      return;
-    }
+    // if (!map_pub->get_subscription_count()) {
+    //   return;
+    // }
 
-    // Publish global map every 10 seconds
-    const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
-    if (now - last_globalmap_pub_time < std::chrono::seconds(10)) {
-      // return;
-    }
-    last_globalmap_pub_time = now;
+    // // Publish global map every 10 seconds
+    // const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+    // if (now - last_globalmap_pub_time < std::chrono::seconds(10)) {
+    //   // return;
+    // }
+    // last_globalmap_pub_time = now;
 
-    logger->warn("Publishing global map is computationally demanding and not recommended");
+    // logger->warn("Publishing global map is computationally demanding and not recommended");
 
-    int total_num_points = 0;
-    for (const auto& submap : this->submaps) {
-      total_num_points += submap->size();
-    }
+    // int total_num_points = 0;
+    // std::deque<gtsam_points::PointCloud::ConstPtr>::iterator it;
+    // for (it = this->submaps.begin(); it != this->submaps.end(); ++it) {
+    //   total_num_points += (*it)->size();
+    // }
 
-    // Concatenate all the submap points
-    gtsam_points::PointCloudCPU::Ptr merged(new gtsam_points::PointCloudCPU);
-    merged->num_points = total_num_points;
-    merged->points_storage.resize(total_num_points);
-    merged->points = merged->points_storage.data();
+    // // Concatenate all the submap points
+    // gtsam_points::PointCloudCPU::Ptr merged(new gtsam_points::PointCloudCPU);
+    // merged->num_points = total_num_points;
+    // merged->points_storage.resize(total_num_points);
+    // merged->points = merged->points_storage.data();
 
-    int begin = 0;
-    for (int i = 0; i < this->submaps.size(); i++) {
-      const auto& submap = this->submaps[i];
-      std::transform(submap->points, submap->points + submap->size(), merged->points + begin, [&](const Eigen::Vector4d& p) { return submap_poses[i] * p; });
-      begin += submap->size();
-    }
+    // int begin = 0;
+    // for (it = this->submaps.begin(); it != this->submaps.end(); ++it) {
+    //   const auto& submap = *it;
+    //   std::transform(submap->points, submap->points + submap->size(), merged->points + begin, [&](const Eigen::Vector4d& p) { return submap_poses[i] * p; });
+    //   begin += submap->size();
+    // }
 
-    auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *merged);
-    map_pub->publish(*points_msg);
+    // auto downsampled = gtsam_points::random_sampling(merged, 0.2, this->mt);
+
+    // auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *downsampled);
+    // map_pub->publish(*points_msg);
   });
 }
 

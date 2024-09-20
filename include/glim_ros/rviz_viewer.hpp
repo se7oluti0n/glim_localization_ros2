@@ -4,6 +4,7 @@
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <deque>
 
 #include <rclcpp/rclcpp.hpp>
 #include <tf2_ros/buffer.h>
@@ -41,6 +42,7 @@ private:
   void set_callbacks();
   void odometry_new_frame(const EstimationFrame::ConstPtr& new_frame);
   void globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& submaps);
+  void on_localization_submap(const std::vector<SubMap::Ptr>& submaps);
   void invoke(const std::function<void()>& task);
 
   void spin_once();
@@ -73,7 +75,7 @@ private:
   std::mutex trajectory_mutex;
   std::unique_ptr<TrajectoryManager> trajectory;
 
-  std::vector<gtsam_points::PointCloud::ConstPtr> submaps;
+  std::deque<gtsam_points::PointCloud::ConstPtr> submaps;
 
   std::mutex invoke_queue_mutex;
   std::vector<std::function<void()>> invoke_queue;
