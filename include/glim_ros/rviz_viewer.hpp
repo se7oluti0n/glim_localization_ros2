@@ -43,6 +43,7 @@ private:
   void odometry_new_frame(const EstimationFrame::ConstPtr& new_frame);
   void globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& submaps);
   void on_localization_submap(const std::vector<SubMap::Ptr>& submaps);
+  void on_submap_debug(const SubMap::Ptr& submap, const Eigen::Isometry3d& pose);
   void invoke(const std::function<void()>& task);
 
   void spin_once();
@@ -68,9 +69,11 @@ private:
   std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> points_pub;
   std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> aligned_points_pub;
   std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> map_pub;
+  std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> submap_pub;
 
   std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>> odom_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> pose_pub;
+  std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> submap_pose_pub;
 
   std::mutex trajectory_mutex;
   std::unique_ptr<TrajectoryManager> trajectory;

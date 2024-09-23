@@ -10,6 +10,8 @@ Panels:
         - /Odometry1
         - /Odometry1/Shape1
         - /Pose1
+        - /PointCloud23
+        - /Pose2
       Splitter Ratio: 0.5
     Tree Height: 696
   - Class: rviz_common/Selection
@@ -88,8 +90,8 @@ Visualization Manager:
     - Alpha: 0.800000011920929
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 30.725055694580078
-        Min Value: -2.450756549835205
+        Max Value: 49.16377258300781
+        Min Value: -4.917015075683594
         Value: true
       Axis: Z
       Channel Name: intensity
@@ -124,13 +126,28 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: true
+        imu:
+          Value: true
+        lidar:
+          Value: true
+        map:
+          Value: true
+        odom:
+          Value: true
+        os_imu:
+          Value: true
+        os_lidar:
+          Value: true
+        os_sensor:
+          Value: true
       Marker Scale: 1
       Name: TF
       Show Arrows: true
       Show Axes: true
       Show Names: false
       Tree:
-        {}
+        map:
+          {}
       Update Interval: 0
       Value: true
     - Angle Tolerance: 0.10000000149011612
@@ -192,6 +209,60 @@ Visualization Manager:
         Reliability Policy: Reliable
         Value: /glim_ros/pose
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/PointCloud2
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 4096
+      Min Color: 0; 0; 0
+      Min Intensity: 0
+      Name: PointCloud2
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.5
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /glim_ros/submap_debug
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
+    - Alpha: 1
+      Axes Length: 10
+      Axes Radius: 0.10000000149011612
+      Class: rviz_default_plugins/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 1
+      Head Radius: 1
+      Name: Pose
+      Shaft Length: 10
+      Shaft Radius: 0.5
+      Shape: Axes
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /glim_ros/submap_pose
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -237,26 +308,21 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz_default_plugins/Orbit
-      Distance: 345.1683044433594
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.2197964191436768
+      Scale: 10
       Target Frame: <Fixed Frame>
-      Value: Orbit (rviz)
-      Yaw: 3.368579864501953
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 0.316910982131958
+      Y: 7.22626256942749
     Saved: ~
 Window Geometry:
   Displays:

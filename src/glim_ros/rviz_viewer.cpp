@@ -75,16 +75,20 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
     false};
   rclcpp::QoS map_qos(rclcpp::QoSInitialization(map_qos_profile.history, map_qos_profile.depth), map_qos_profile);
   map_pub = node.create_publisher<sensor_msgs::msg::PointCloud2>("~/map", map_qos);
+  submap_pub = node.create_publisher<sensor_msgs::msg::PointCloud2>("~/submap_debug", map_qos);
   odom_pub = node.create_publisher<nav_msgs::msg::Odometry>("~/odom", 10);
   pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/pose", 10);
+  submap_pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/submap_pose", 10);
 
   return {};
 }
 
 void RvizViewer::set_callbacks() {
   using std::placeholders::_1;
+  using std::placeholders::_2;
   OdometryEstimationCallbacks::on_new_frame.add(std::bind(&RvizViewer::odometry_new_frame, this, _1));
   LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::on_localization_submap, this, _1));
+  LocalizationCallbacks::on_update_submap_initial_pose.add(std::bind(&RvizViewer::on_submap_debug, this, _1, _2));
   GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
 }
 
@@ -259,6 +263,38 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
   }
 }
 
+void RvizViewer::on_submap_debug(const SubMap::Ptr& submap, const Eigen::Isometry3d& submap_pose) {
+  invoke([this, submap, submap_pose]{
+    gtsam_points::PointCloudCPU::Ptr merged(new gtsam_points::PointCloudCPU);
+    merged->num_points = submap->frame->size();
+    merged->points_storage.resize(submap->frame->size());
+    merged->points = merged->points_storage.data();
+
+    std::transform(submap->frame->points, submap->frame->points + submap->frame->size(), merged->points,
+        [&](const Eigen::Vector4d& p) { return submap_pose * p; });
+
+    const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+    auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *merged);
+    this->submap_pub->publish(*points_msg);
+
+        // Publish sensor pose (with loop closure)
+    geometry_msgs::msg::PoseStamped pose;
+    Eigen::Quaterniond quat_world_imu = Eigen::Quaterniond(submap_pose.linear());
+    pose.header.stamp = now;
+    pose.header.frame_id = map_frame_id;
+    pose.pose.position.x = submap_pose.translation().x();
+    pose.pose.position.y = submap_pose.translation().y();
+    pose.pose.position.z = submap_pose.translation().z();
+    pose.pose.orientation.x = quat_world_imu.x();
+    pose.pose.orientation.y = quat_world_imu.y();
+    pose.pose.orientation.z = quat_world_imu.z();
+    pose.pose.orientation.w = quat_world_imu.w();
+    this->submap_pose_pub->publish(pose);
+
+    // logger->debug("published pose (stamp={})", new_frame->stamp);
+  });
+
+}
 
 void RvizViewer::on_localization_submap(const std::vector<SubMap::Ptr>& prebuilt_submaps) {
   invoke([this, prebuilt_submaps]{
