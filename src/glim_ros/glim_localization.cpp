@@ -63,9 +63,10 @@ void GlimLocalization::handle_initial_pose(
   initial_pose_.translation() = translation;
   initial_pose_.linear() = quat.toRotationMatrix();
 
-  auto most_recent_submap = sub_mapping->force_create_submap();
+  // auto most_recent_submap = sub_mapping->force_create_submap();
+  auto latest_frame = odometry_estimation->get_latest_frame();
 
-  global_mapping->relocalize(most_recent_submap, initial_pose_);
+  global_mapping->relocalize(latest_frame, initial_pose_);
 
 }
 
