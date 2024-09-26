@@ -344,7 +344,7 @@ void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& sub
   }
 
   // Invoke a submap concatenation task in the RvizViewer thread
-  invoke([this, latest_submap, submap_poses] {
+  // invoke([this, latest_submap, submap_poses] {
     // if (this->submaps.size() >= 3) {
     //   this->submaps.pop_front();
     // }
@@ -386,7 +386,7 @@ void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& sub
 
     // auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *downsampled);
     // map_pub->publish(*points_msg);
-  });
+  // });
 }
 
 void RvizViewer::invoke(const std::function<void()>& task) {
