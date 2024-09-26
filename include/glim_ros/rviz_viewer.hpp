@@ -43,7 +43,7 @@ private:
   void odometry_new_frame(const EstimationFrame::ConstPtr& new_frame);
   void globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& submaps);
   void on_localization_submap(const std::vector<SubMap::Ptr>& submaps);
-  void on_submap_debug(const SubMap::Ptr& submap, const Eigen::Isometry3d& pose);
+  void on_submap_debug(gtsam_points::PointCloud::ConstPtr submap, const Eigen::Isometry3d& pose);
   void invoke(const std::function<void()>& task);
 
   void spin_once();

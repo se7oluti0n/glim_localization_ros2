@@ -263,14 +263,14 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
   }
 }
 
-void RvizViewer::on_submap_debug(const SubMap::Ptr& submap, const Eigen::Isometry3d& submap_pose) {
-  invoke([this, submap, submap_pose]{
+void RvizViewer::on_submap_debug(gtsam_points::PointCloud::ConstPtr frame, const Eigen::Isometry3d& submap_pose) {
+  invoke([this, frame, submap_pose]{
     gtsam_points::PointCloudCPU::Ptr merged(new gtsam_points::PointCloudCPU);
-    merged->num_points = submap->frame->size();
-    merged->points_storage.resize(submap->frame->size());
+    merged->num_points = frame->size();
+    merged->points_storage.resize(frame->size());
     merged->points = merged->points_storage.data();
 
-    std::transform(submap->frame->points, submap->frame->points + submap->frame->size(), merged->points,
+    std::transform(frame->points, frame->points + frame->size(), merged->points,
         [&](const Eigen::Vector4d& p) { return submap_pose * p; });
 
     const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
