@@ -65,6 +65,7 @@ private:
   std::string map_frame_id;
   bool publish_imu2lidar;
   double tf_time_offset;
+  double rviz_random_sampling_rate;
 
   std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> points_pub;
   std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> aligned_points_pub;

@@ -35,6 +35,7 @@ private:
   Eigen::Isometry3d initial_pose_;
 
   std::string map_path;
+  // bool force_create_submap_flag{false};
 
 };
 

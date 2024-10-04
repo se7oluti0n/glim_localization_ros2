@@ -59,6 +59,8 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr points_sub;
   image_transport::Subscriber image_sub;
+
+  bool force_create_submap_flag = false;
 };
 
 }  // namespace glim

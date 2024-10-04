@@ -29,6 +29,7 @@ RvizViewer::RvizViewer() : logger(create_module_logger("rviz")) {
   map_frame_id = config.param<std::string>("glim_ros", "map_frame_id", "map");
   publish_imu2lidar = config.param<bool>("glim_ros", "publish_imu2lidar", true);
   tf_time_offset = config.param<double>("glim_ros", "tf_time_offset", 1e-6);
+  rviz_random_sampling_rate = config.param<double>("glim_ros", "rviz_random_sampling_rate", 0.1);
 
   last_globalmap_pub_time = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
   trajectory.reset(new TrajectoryManager);
@@ -319,7 +320,7 @@ void RvizViewer::on_localization_submap(const std::vector<SubMap::Ptr>& prebuilt
       begin += submap->frame->size();
     }
 
-    auto downsampled = gtsam_points::random_sampling(merged, 0.05, mt);
+    auto downsampled = gtsam_points::random_sampling(merged, rviz_random_sampling_rate, mt);
 
     const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
     auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *downsampled);
@@ -329,6 +330,8 @@ void RvizViewer::on_localization_submap(const std::vector<SubMap::Ptr>& prebuilt
 
 
 void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& submaps) {
+  if (submaps.size() == 0)
+    return;
   const SubMap::ConstPtr latest_submap = submaps.back();
 
   const double stamp_endpoint_R = latest_submap->odom_frames.back()->stamp;

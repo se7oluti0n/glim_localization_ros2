@@ -280,7 +280,16 @@ void GlimROS::timer_callback() {
       sub_mapping->insert_frame(frame);
     }
 
+    if (force_create_submap_flag) {
+      sub_mapping->force_create_submap();
+    }
+
     auto submaps = sub_mapping->get_results();
+
+    if (submaps.size() > 0 && force_create_submap_flag) {
+      force_create_submap_flag = false;
+    }
+
     if (global_mapping) {
       for (const auto& submap : submaps) {
         global_mapping->insert_submap(submap);
