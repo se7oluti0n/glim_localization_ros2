@@ -79,7 +79,7 @@ private:
   std::mutex trajectory_mutex;
   std::unique_ptr<TrajectoryManager> trajectory;
 
-  std::deque<gtsam_points::PointCloud::ConstPtr> submaps;
+  std::vector<SubMap::Ptr> submaps;
 
   std::mutex invoke_queue_mutex;
   std::vector<std::function<void()>> invoke_queue;
