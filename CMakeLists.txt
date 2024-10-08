@@ -31,6 +31,7 @@ endif()
 ament_auto_add_library(glim_ros SHARED
   src/glim_ros/glim_ros.cpp
   src/glim_ros/glim_localization.cpp
+  src/glim_ros/glim_editor.cpp
 )
 target_include_directories(glim_ros PUBLIC
   include
@@ -85,6 +86,7 @@ if(BUILD_WITH_VIEWER)
   )
   target_link_libraries(offline_viewer
     glim::interactive_viewer
+    glim_ros
   )
 endif()
 
