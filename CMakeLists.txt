@@ -15,6 +15,7 @@ find_package(ament_cmake_auto REQUIRED)
 ament_auto_find_build_dependencies()
 
 find_package(glim REQUIRED)
+find_package(OCTOMAP REQUIRED)
 
 if(BUILD_WITH_CUDA)
   add_definitions(-DBUILD_GTSAM_POINTS_GPU)
@@ -43,6 +44,20 @@ rclcpp_components_register_nodes(glim_ros "glim::GlimROS")
 
 ament_auto_add_library(rviz_viewer SHARED
   src/glim_ros/rviz_viewer.cpp
+)
+
+ament_auto_add_library(glim_octomap SHARED
+  src/glim_ros/glim_octomap.cpp
+)
+
+target_include_directories(glim_octomap
+  PUBLIC
+    ${OCTOMAP_INCLUDE_DIRS}
+)
+
+target_link_libraries(glim_octomap
+  ${OCTOMAP_LIBRARIES}
+  ${PCL_LIBRARIES}
 )
 
 ### glim_rosnode ###

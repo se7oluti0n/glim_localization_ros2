@@ -88,14 +88,14 @@ def generate_launch_description():
     )
 
     ld = LaunchDescription()
-    ld.add_action(use_sim_time_arg)    
-    ld.add_action(resolution_launch_arg)    
+    ld.add_action(use_sim_time_arg)
+    ld.add_action(resolution_launch_arg)
     ld.add_action(config_launch_arg)
 
     ld.add_action(frame_id_launch_arg)
     ld.add_action(max_range_launch_arg)
     ld.add_action(glim_ros_node)
-    ld.add_action(octomap_server)
+    # ld.add_action(octomap_server)
     ld.add_action(static_tf_node)
 
 

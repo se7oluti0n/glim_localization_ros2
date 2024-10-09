@@ -45,6 +45,8 @@ int main(int argc, char** argv) {
 
 
   rclcpp::spin(glim);
-  viewer_thread.join();
   rclcpp::shutdown();
+
+  viewer.stop();
+  viewer_thread.join();
 }
