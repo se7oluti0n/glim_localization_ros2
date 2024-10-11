@@ -101,8 +101,15 @@ std::vector<GenericTopicSubscription::Ptr> GlimOctomap::create_subscriptions(rcl
   tf_listener = std::make_unique<tf2_ros::TransformListener>(*tf_buffer);
   tf_broadcaster = std::make_unique<tf2_ros::TransformBroadcaster>(node);
 
-  auto qos = rclcpp::QoS{1};
-  map_pub_ = node.create_publisher<OccupancyGrid>("projected_map", qos.keep_last(5));
+  // auto qos = rclcpp::QoS{1};
+  rclcpp::QoS map_qos(10);  // initialize to default
+    // if (map_subscribe_transient_local_)
+  {
+    map_qos.transient_local();
+    map_qos.reliable();
+    map_qos.keep_last(1);
+  }
+  map_pub_ = node.create_publisher<OccupancyGrid>("projected_map", map_qos);
   return {};
 }
 

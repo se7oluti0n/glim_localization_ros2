@@ -119,8 +119,8 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
 
   // Publish transforms
   const auto stamp = from_sec(new_frame->stamp);
-  // const auto tf_stamp = from_sec(new_frame->stamp + tf_time_offset);
-  const rclcpp::Time tf_stamp = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+  const auto tf_stamp = from_sec(new_frame->stamp + tf_time_offset);
+  // const rclcpp::Time tf_stamp = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
 
   // Odom -> Base
   geometry_msgs::msg::TransformStamped trans;
