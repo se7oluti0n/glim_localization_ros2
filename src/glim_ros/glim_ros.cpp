@@ -45,6 +45,7 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   logger->sinks().push_back(ringbuffer_sink);
 
   bool debug = false;
+  this->declare_parameter<std::string>("dump_path", "/tmp/dump");
   this->declare_parameter<bool>("debug", false);
   this->get_parameter<bool>("debug", debug);
 
@@ -161,6 +162,7 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   // ROS-related
   using std::placeholders::_1;
   const std::string imu_topic = config_ros.param<std::string>("glim_ros", "imu_topic", "");
+  const std::string wheel_topic = config_ros.param<std::string>("glim_ros", "wheel_topic", "");
   const std::string points_topic = config_ros.param<std::string>("glim_ros", "points_topic", "");
   const std::string image_topic = config_ros.param<std::string>("glim_ros", "image_topic", "");
 
@@ -168,6 +170,7 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   auto imu_qos = rclcpp::SensorDataQoS();
   imu_qos.get_rmw_qos_profile().depth = 1000;
   imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, imu_qos, std::bind(&GlimROS::imu_callback, this, _1));
+  raw_odom_sub = this->create_subscription<sensor_msgs::msg::JointState>(wheel_topic, imu_qos, std::bind(&GlimROS::raw_odom_callback, this, _1));
   points_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(points_topic, rclcpp::SensorDataQoS(), std::bind(&GlimROS::points_callback, this, _1));
   image_sub = image_transport::create_subscription(this, image_topic, std::bind(&GlimROS::image_callback, this, _1), "raw", rmw_qos_profile_sensor_data);
 
@@ -178,7 +181,9 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
 
   // Start timer
   timer = this->create_wall_timer(std::chrono::milliseconds(1), [this]() { timer_callback(); });
-
+  save_srv = this->create_service<std_srvs::srv::Trigger>(
+    "~/save_map", std::bind(&GlimROS::handle_save_map_sevice, this,
+    std::placeholders::_1, std::placeholders::_2));
   spdlog::debug("initialized");
 }
 
@@ -189,6 +194,23 @@ GlimROS::~GlimROS() {
 
 const std::vector<std::shared_ptr<GenericTopicSubscription>>& GlimROS::extension_subscriptions() {
   return extension_subs;
+}
+
+void GlimROS::handle_save_map_sevice(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                      std_srvs::srv::Trigger::Response::SharedPtr response) {
+  std::string dump_path = "/tmp/dump";
+  this->get_parameter<std::string>("dump_path", dump_path);
+
+  this->wait();
+  this->save(dump_path);
+}
+
+void GlimROS::raw_odom_callback(const sensor_msgs::msg::JointState::SharedPtr msg) {
+  const double odom_stamp = msg->header.stamp.sec + msg->header.stamp.nanosec / 1e9;
+  
+  double left_vel = msg->velocity[0];
+  double right_vel = msg->velocity[1];
+  odometry_estimation->insert_raw_odom(odom_stamp, left_vel, right_vel);
 }
 
 void GlimROS::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {

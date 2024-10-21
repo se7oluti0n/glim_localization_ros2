@@ -13,15 +13,22 @@ int main(int argc, char** argv) {
 
   auto glim = std::make_shared<glim::GlimROS>(options);
 
-  rclcpp::spin(glim);
+  try {
+    rclcpp::spin(glim);
+  }
+
+  catch (std::exception &ex) {
+
+  }
+  
   rclcpp::shutdown();
 
-  std::string dump_path = "/tmp/dump";
-  glim->declare_parameter<std::string>("dump_path", dump_path);
-  glim->get_parameter<std::string>("dump_path", dump_path);
+  // std::string dump_path = "/tmp/dump";
+  // // glim->declare_parameter<std::string>("dump_path", dump_path);
+  // glim->get_parameter<std::string>("dump_path", dump_path);
 
-  glim->wait();
-  glim->save(dump_path);
+  // glim->wait();
+  // glim->save(dump_path);
 
   return 0;
 }
