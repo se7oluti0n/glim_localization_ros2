@@ -60,6 +60,10 @@ target_link_libraries(glim_octomap
   ${PCL_LIBRARIES}
 )
 
+target_link_libraries(rviz_viewer
+  glim::standard_viewer
+)
+
 ### glim_rosnode ###
 ament_auto_add_executable(glim_rosnode
   src/glim_rosnode.cpp
@@ -90,6 +94,12 @@ ament_auto_add_executable(validator_node
 target_link_libraries(validator_node
   glim_ros
 )
+
+### validator_node ###
+ament_auto_add_executable(evaluator_node
+  src/evaluator_node.cpp
+)
+
 
 if(BUILD_WITH_VIEWER)
   ### offline_viewer ###

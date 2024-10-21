@@ -23,48 +23,21 @@ from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, GroupAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, TextSubstitution
-from launch.actions import     OpaqueFunction
-
+from launch.actions import AppendEnvironmentVariable
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
-
-def urdf_setup(context, *args, **kwargs):
-
-    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    urdf_file_name = LaunchConfiguration('urdf_file_name', default='amr.urdf')
-
-    urdf_path = urdf_file_name.perform(context=context)
-
-    with open(urdf_path, 'r') as infp:
-        robot_desc = infp.read()
-
-    return [
-        Node(
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            name='robot_state_publisher',
-            output='screen',
-            parameters=[{
-                'use_sim_time': use_sim_time,
-                'robot_description': robot_desc
-            }],
-        ),
-    ]
 
 def generate_launch_description():
     # args that can be set from the command line or a default will be used
     use_sim_time_arg = DeclareLaunchArgument(
         "use_sim_time", default_value='false'
     )
-
     use_sim_time = LaunchConfiguration('use_sim_time')
 
         
     config_launch_arg = DeclareLaunchArgument(
         "config", default_value=TextSubstitution(text="config/velodyne")
     )
-
-
 
     sensor_nodes = GroupAction(
         condition=UnlessCondition(use_sim_time),
@@ -85,7 +58,7 @@ def generate_launch_description():
           ),
         ]
     )
-    
+
     urdf_path = '/home/manh/tvc_nav/src/tvc_description/urdf/amr_1lidar.urdf'
 
     with open(urdf_path, 'r') as infp:
@@ -107,10 +80,9 @@ def generate_launch_description():
         ]
     )
 
-
     glim_ros_node = Node(
         package='glim_ros',
-        executable='glim_rosnode',
+        executable='glim_localization',
         name='glim_ros',
         parameters=[{
             "config_path": LaunchConfiguration('config'),
@@ -126,9 +98,8 @@ def generate_launch_description():
     ld.add_action(config_launch_arg)
     ld.add_action(glim_ros_node)
     ld.add_action(sensor_nodes)
-    ld.add_action(urdf_node)
     # ld.add_action(octomap_server)
-    # ld.add_action(static_tf_node)
+    ld.add_action(urdf_node)
 
 
     # Add the commands to the launch description

@@ -29,6 +29,10 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
         # args that can be set from the command line or a default will be used
+    use_sim_time_arg = DeclareLaunchArgument(
+        "use_sim_time", default_value='false'
+    )
+        
     config_launch_arg = DeclareLaunchArgument(
         "config", default_value=TextSubstitution(text="config/velodyne")
     )
@@ -47,39 +51,32 @@ def generate_launch_description():
         executable='glim_localization',
         name='glim_ros',
         parameters=[{
-            "config_path": LaunchConfiguration('config')
+            "config_path": LaunchConfiguration('config'),
+            "use_sim_time": LaunchConfiguration('use_sim_time')
         }],
         output='screen'
     )
 
-    octomap_server = Node(
-        package='octomap_server',
-        executable='octomap_server_node',
-        name='octomap_server',
+    static_tf_node = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        output="screen",
+        arguments=["0", "0", "1.5", "0", "0", "0", "base_footprint", "imu"],
         parameters=[{
-                "resolution": LaunchConfiguration('resolution'),
-                "frame_id": LaunchConfiguration('frame_id'),
-                "base_frame_id": "imu",
-                "sensor_model.max_range": LaunchConfiguration('max_range'),
-                "filter_ground_plane": True,
-                "ground_filter.distance": 0.2,
-                "ground_filter.plane_distance": 0.2
-
-            }],
-        remappings=[
-            ('/cloud_in', '/glim_ros/submap_debug'),
-        ],
-        output='screen'
+            # "config_path": LaunchConfiguration('config'),
+            "use_sim_time": LaunchConfiguration("use_sim_time")
+        }],
     )
 
     ld = LaunchDescription()
+    ld.add_action(use_sim_time_arg)    
     ld.add_action(resolution_launch_arg)    
     ld.add_action(config_launch_arg)
 
     ld.add_action(frame_id_launch_arg)
     ld.add_action(max_range_launch_arg)
     ld.add_action(glim_ros_node)
-    ld.add_action(octomap_server)
+    # ld.add_action(static_tf_node)
 
 
     # Add the commands to the launch description

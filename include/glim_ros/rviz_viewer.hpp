@@ -14,6 +14,7 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <std_msgs/msg/header.hpp>
 
 #include <glim/odometry/estimation_frame.hpp>
 #include <glim/mapping/sub_map.hpp>
@@ -64,6 +65,7 @@ private:
   std::string odom_frame_id;
   std::string map_frame_id;
   bool publish_imu2lidar;
+  bool publish_topic_odom;
   double tf_time_offset;
   double rviz_random_sampling_rate;
 
@@ -73,8 +75,10 @@ private:
   std::shared_ptr<rclcpp::Publisher<sensor_msgs::msg::PointCloud2>> submap_pub;
 
   std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>> odom_pub;
+  std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Header>> user_event_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> pose_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> submap_pose_pub;
+
 
   std::mutex trajectory_mutex;
   std::unique_ptr<TrajectoryManager> trajectory;

@@ -9,6 +9,8 @@
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <std_srvs/srv/trigger.hpp>
 
 namespace glim {
 class TimeKeeper;
@@ -29,6 +31,7 @@ public:
   void timer_callback();
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
+  void raw_odom_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
   void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr msg);
   size_t points_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
 
@@ -36,7 +39,8 @@ public:
   void save(const std::string& path);
 
   const std::vector<std::shared_ptr<GenericTopicSubscription>>& extension_subscriptions();
-
+  void handle_save_map_sevice(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                      std_srvs::srv::Trigger::Response::SharedPtr response);
 protected:
   std::unique_ptr<glim::TimeKeeper> time_keeper;
   std::unique_ptr<glim::CloudPreprocessor> preprocessor;
@@ -57,10 +61,14 @@ protected:
   // ROS-related
   rclcpp::TimerBase::SharedPtr timer;
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr raw_odom_sub;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr points_sub;
   image_transport::Subscriber image_sub;
 
   bool force_create_submap_flag = false;
+
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_srv;
+
 };
 
 }  // namespace glim
