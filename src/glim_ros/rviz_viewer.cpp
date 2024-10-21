@@ -8,6 +8,7 @@
 #include <gtsam_points/types/point_cloud_cpu.hpp>
 #include <glim/odometry/callbacks.hpp>
 #include <glim/mapping/callbacks.hpp>
+#include <glim/viewer/viewer_callbacks.hpp>
 #include <glim/util/logging.hpp>
 #include <glim/util/config.hpp>
 #include <glim/util/trajectory_manager.hpp>
@@ -78,6 +79,7 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
   map_pub = node.create_publisher<sensor_msgs::msg::PointCloud2>("~/map", map_qos);
   submap_pub = node.create_publisher<sensor_msgs::msg::PointCloud2>("~/submap_debug", map_qos);
   odom_pub = node.create_publisher<nav_msgs::msg::Odometry>("~/odom", 10);
+  user_event_pub = node.create_publisher<std_msgs::msg::Header>("~/user_event", 10);
   pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/pose", 10);
   submap_pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/submap_pose", 10);
 
@@ -91,6 +93,12 @@ void RvizViewer::set_callbacks() {
   LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::on_localization_submap, this, _1));
   LocalizationCallbacks::on_update_submap_initial_pose.add(std::bind(&RvizViewer::on_submap_debug, this, _1, _2));
   GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
+  ViewerCallbacks::user_event.add([this](int pose_id){
+    std_msgs::msg::Header msg;
+    msg.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+    msg.frame_id = std::to_string(pose_id);
+    this->user_event_pub->publish(msg);
+  });
 }
 
 void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) {
@@ -128,6 +136,7 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
   trans.header.frame_id = odom_frame_id;
   trans.child_frame_id = base_frame_id;
 
+  tf2::Duration timeout(tf2::durationFromSec(2.0));
   if (base_frame_id == imu_frame_id) {
     trans.transform.translation.x = T_odom_imu.translation().x();
     trans.transform.translation.y = T_odom_imu.translation().y();
@@ -139,7 +148,7 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
     tf_broadcaster->sendTransform(trans);
   } else {
     try {
-      const auto trans_imu_base = tf_buffer->lookupTransform(imu_frame_id, base_frame_id, from_sec(new_frame->stamp));
+      const auto trans_imu_base = tf_buffer->lookupTransform(imu_frame_id, base_frame_id, rclcpp::Time(0.), timeout);
       const auto& t = trans_imu_base.transform.translation;
       const auto& r = trans_imu_base.transform.rotation;
 
@@ -195,13 +204,36 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
     odom.header.stamp = stamp;
     odom.header.frame_id = odom_frame_id;
     odom.child_frame_id = imu_frame_id;
-    odom.pose.pose.position.x = T_odom_imu.translation().x();
-    odom.pose.pose.position.y = T_odom_imu.translation().y();
-    odom.pose.pose.position.z = T_odom_imu.translation().z();
-    odom.pose.pose.orientation.x = quat_odom_imu.x();
-    odom.pose.pose.orientation.y = quat_odom_imu.y();
-    odom.pose.pose.orientation.z = quat_odom_imu.z();
-    odom.pose.pose.orientation.w = quat_odom_imu.w();
+
+    Eigen::Isometry3d T_odom_base = T_odom_imu;
+
+    if (base_frame_id != imu_frame_id) {
+      try {
+      const auto trans_imu_base = tf_buffer->lookupTransform(imu_frame_id, base_frame_id, rclcpp::Time(0.), timeout);
+      const auto& t = trans_imu_base.transform.translation;
+      const auto& r = trans_imu_base.transform.rotation;
+
+      Eigen::Isometry3d T_imu_base = Eigen::Isometry3d::Identity();
+      T_imu_base.translation() << t.x, t.y, t.z;
+      T_imu_base.linear() = Eigen::Quaterniond(r.w, r.x, r.y, r.z).toRotationMatrix();
+
+      T_odom_base = T_odom_imu * T_imu_base;
+      }
+      catch (const tf2::TransformException& e) {
+        logger->warn("Failed to lookup transform from {} to {} (stamp={}.{}): {}", imu_frame_id, base_frame_id, stamp.sec, stamp.nanosec, e.what());
+      }
+    }
+
+
+    const Eigen::Quaterniond quat_odom_base(T_odom_base.linear());
+
+    odom.pose.pose.position.x = T_odom_base.translation().x();
+    odom.pose.pose.position.y = T_odom_base.translation().y();
+    odom.pose.pose.position.z = T_odom_base.translation().z();
+    odom.pose.pose.orientation.x = quat_odom_base.x();
+    odom.pose.pose.orientation.y = quat_odom_base.y();
+    odom.pose.pose.orientation.z = quat_odom_base.z();
+    odom.pose.pose.orientation.w = quat_odom_base.w();
     odom_pub->publish(odom);
 
     logger->debug("published odom (stamp={})", new_frame->stamp);
