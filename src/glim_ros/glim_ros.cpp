@@ -127,7 +127,7 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   }
 
   // Extention modules
-  const auto extensions = config_ros.param<std::vector<std::string>>("glim_ros", "extension_modules");
+  const auto extensions = config_ros.param<std::vector<std::string>>(localization_mode? "localization" : "glim_ros", "extension_modules");
   if (extensions && !extensions->empty()) {
     for (const auto& extension : *extensions) {
       if (extension.find("viewer") == std::string::npos && extension.find("monitor") == std::string::npos) {
