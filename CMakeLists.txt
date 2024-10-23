@@ -115,7 +115,7 @@ if(BUILD_WITH_VIEWER)
   )
 endif()
 
-install(DIRECTORY launch
+install(DIRECTORY launch urdf
   DESTINATION share/${PROJECT_NAME}/
 )
 ament_auto_package()

@@ -26,6 +26,35 @@ from launch.substitutions import LaunchConfiguration, TextSubstitution
 from launch.actions import AppendEnvironmentVariable
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
+from launch.actions import     OpaqueFunction
+
+
+def urdf_setup(context, *args, **kwargs):
+
+    use_sim_time = LaunchConfiguration('use_sim_time', default='false')
+    urdf_file_name = LaunchConfiguration('urdf_file_name', default='amr.urdf')
+
+    # urdf_path = urdf_file_name.perform(context=context)
+    urdf_path = os.path.join(
+        get_package_share_directory('glim_ros'),
+        'urdf',urdf_file_name.perform(context=context))
+    print("urdf path: {}".format(urdf_path))
+
+    with open(urdf_path, 'r') as infp:
+        robot_desc = infp.read()
+
+    return [
+        Node(
+            package='robot_state_publisher',
+            executable='robot_state_publisher',
+            name='robot_state_publisher',
+            output='screen',
+            parameters=[{
+                'use_sim_time': use_sim_time,
+                'robot_description': robot_desc
+            }],
+        ),
+    ]
 
 def generate_launch_description():
     # args that can be set from the command line or a default will be used
@@ -37,6 +66,14 @@ def generate_launch_description():
         
     config_launch_arg = DeclareLaunchArgument(
         "config", default_value=TextSubstitution(text="config/velodyne")
+    )
+
+    urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='yzbot.urdf')
+    urdf_node = GroupAction(
+        condition=IfCondition(use_sim_time),
+        actions=[
+            OpaqueFunction(function=urdf_setup),
+        ]
     )
 
     sensor_nodes = GroupAction(
@@ -59,26 +96,26 @@ def generate_launch_description():
         ]
     )
 
-    urdf_path = '/home/manh/tvc_nav/src/tvc_description/urdf/amr_1lidar.urdf'
+    # urdf_path = '/home/manh/tvc_nav/src/tvc_description/urdf/amr_1lidar.urdf'
 
-    with open(urdf_path, 'r') as infp:
-        robot_desc = infp.read()
+    # with open(urdf_path, 'r') as infp:
+    #     robot_desc = infp.read()
 
-    urdf_node = GroupAction(
-        condition=IfCondition(use_sim_time),
-        actions=[
-            Node(
-                package='robot_state_publisher',
-                executable='robot_state_publisher',
-                name='robot_state_publisher',
-                output='screen',
-                parameters=[{
-                    'use_sim_time': use_sim_time,
-                    'robot_description': robot_desc
-                }],
-            ),
-        ]
-    )
+    # urdf_node = GroupAction(
+    #     condition=IfCondition(use_sim_time),
+    #     actions=[
+    #         Node(
+    #             package='robot_state_publisher',
+    #             executable='robot_state_publisher',
+    #             name='robot_state_publisher',
+    #             output='screen',
+    #             parameters=[{
+    #                 'use_sim_time': use_sim_time,
+    #                 'robot_description': robot_desc
+    #             }],
+    #         ),
+    #     ]
+    # )
 
     glim_ros_node = Node(
         package='glim_ros',
@@ -91,16 +128,14 @@ def generate_launch_description():
         output='screen'
     )
 
-
-
     ld = LaunchDescription()
     ld.add_action(use_sim_time_arg)
     ld.add_action(config_launch_arg)
     ld.add_action(glim_ros_node)
     ld.add_action(sensor_nodes)
     # ld.add_action(octomap_server)
+    ld.add_action(urdf_arg)
     ld.add_action(urdf_node)
-
 
     # Add the commands to the launch description
 

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<robot
+  name="Tugbot">
+  <link name="base_link" />
+  <link name="imu" />
+  <link name="base_footprint" />
+  <link name="laser" />
+  <link name="scan_back" />
+  <link name="scan_omni" />
+
+  <joint name="base_joint" type="fixed">
+      <parent link="base_footprint"/>
+      <child link="base_link"/>
+      <origin xyz="0 0 0.195" rpy="0 0 0"/>
+  </joint>
+  <joint name="imu_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="imu"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+  <joint name="laser_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="laser"/>
+      <origin xyz="0.221 0 -0.055" rpy="0 0 0"/>
+  </joint>
+  <joint name="scan_back_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="scan_back"/>
+      <origin xyz="-0.2075 0 0.01" rpy="0 0 3.141592654"/>
+  </joint>
+  <joint name="scan_omni_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="scan_omni"/>
+      <origin xyz="-0.1855 0 0.335" rpy="0 0 0"/>
+  </joint>
+
+</robot>

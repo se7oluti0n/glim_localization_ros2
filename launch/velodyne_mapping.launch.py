@@ -33,7 +33,11 @@ def urdf_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
     urdf_file_name = LaunchConfiguration('urdf_file_name', default='amr.urdf')
 
-    urdf_path = urdf_file_name.perform(context=context)
+    # urdf_path = urdf_file_name.perform(context=context)
+    urdf_path = os.path.join(
+        get_package_share_directory('glim_ros'),
+        'urdf',urdf_file_name.perform(context=context))
+    print("urdf path: {}".format(urdf_path))
 
     with open(urdf_path, 'r') as infp:
         robot_desc = infp.read()
@@ -59,11 +63,17 @@ def generate_launch_description():
 
     use_sim_time = LaunchConfiguration('use_sim_time')
 
+    publish_urdf_arg = DeclareLaunchArgument(
+        "publish_urdf", default_value='false'
+    )
+
+    publish_urdf = LaunchConfiguration('publish_urdf')
         
     config_launch_arg = DeclareLaunchArgument(
         "config", default_value=TextSubstitution(text="config/velodyne")
     )
 
+    urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='yzbot.urdf')
 
 
     sensor_nodes = GroupAction(
@@ -86,27 +96,19 @@ def generate_launch_description():
         ]
     )
     
-    urdf_path = '/home/manh/tvc_nav/src/tvc_description/urdf/amr_1lidar.urdf'
+    # urdf_path = '/home/manh/tvc_nav/src/tvc_description/urdf/amr_1lidar.urdf'
 
-    with open(urdf_path, 'r') as infp:
-        robot_desc = infp.read()
+    # with open(urdf_path, 'r') as infp:
+    #     robot_desc = infp.read()
 
     urdf_node = GroupAction(
-        condition=IfCondition(use_sim_time),
+        condition=IfCondition(publish_urdf),
         actions=[
-            Node(
-                package='robot_state_publisher',
-                executable='robot_state_publisher',
-                name='robot_state_publisher',
-                output='screen',
-                parameters=[{
-                    'use_sim_time': use_sim_time,
-                    'robot_description': robot_desc
-                }],
-            ),
+            OpaqueFunction(function=urdf_setup),
         ]
     )
 
+    # urdf_action = OpaqueFunction(function=urdf_setup)
 
     glim_ros_node = Node(
         package='glim_ros',
@@ -116,13 +118,17 @@ def generate_launch_description():
             "config_path": LaunchConfiguration('config'),
             "use_sim_time": use_sim_time
         }],
-        output='screen'
+        output='screen',
+        # prefix=["gnome-terminal -- gdb -ex run --args"]
+
     )
 
 
 
     ld = LaunchDescription()
     ld.add_action(use_sim_time_arg)
+    ld.add_action(publish_urdf_arg)
+    ld.add_action(urdf_arg)
     ld.add_action(config_launch_arg)
     ld.add_action(glim_ros_node)
     ld.add_action(sensor_nodes)
