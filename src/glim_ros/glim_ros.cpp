@@ -45,9 +45,13 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   logger->sinks().push_back(ringbuffer_sink);
 
   bool debug = false;
+  bool localization_mode = false;
   this->declare_parameter<std::string>("dump_path", "/tmp/dump");
   this->declare_parameter<bool>("debug", false);
   this->get_parameter<bool>("debug", debug);
+
+  this->declare_parameter<bool>("localization", false);
+  this->get_parameter<bool>("localization", localization_mode);
 
   if (debug) {
     spdlog::info("enable debug printing");
@@ -111,7 +115,8 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   // Global mapping
   if (config_ros.param<bool>("glim_ros", "enable_global_mapping", true)) {
     const std::string global_mapping_so_name =
-      glim::Config(glim::GlobalConfig::get_config_path("config_global_mapping")).param<std::string>("global_mapping", "so_name", "libglobal_mapping.so");
+      glim::Config(glim::GlobalConfig::get_config_path("config_global_mapping"))
+        .param<std::string>(localization_mode? "localization" : "global_mapping", "so_name", "libglobal_mapping.so");
     if (!global_mapping_so_name.empty()) {
       spdlog::info("load {}", global_mapping_so_name);
       auto global = GlobalMappingBase::load_module(global_mapping_so_name);
@@ -184,7 +189,63 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   save_srv = this->create_service<std_srvs::srv::Trigger>(
     "~/save_map", std::bind(&GlimROS::handle_save_map_sevice, this,
     std::placeholders::_1, std::placeholders::_2));
+
+  if (localization_mode) {
+    setup_localization();
+  }
   spdlog::debug("initialized");
+}
+
+void GlimROS::setup_localization() {
+  initial_pose_sub = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
+      "/initialpose", 10, std::bind(&GlimROS::handle_initial_pose, this, std::placeholders::_1));
+
+  load_srv = this->create_service<std_srvs::srv::Trigger>(
+    "~/load_map", std::bind(&GlimROS::handle_load_map_sevice, this,
+    std::placeholders::_1, std::placeholders::_2));
+
+  this->declare_parameter<std::string>("map_path", "");
+  this->get_parameter<std::string>("map_path", map_path);
+}
+
+void GlimROS::handle_load_map_sevice(
+  const std_srvs::srv::Trigger::Request::SharedPtr request,
+  std_srvs::srv::Trigger::Response::SharedPtr response)
+{
+  auto ret = global_mapping->load(map_path);
+  response->success = ret;
+  if (ret) {
+    response->message = "Successuflly load map, map path: " + map_path;
+  }
+  else {
+    response->message = "Failed to load map, map path: " + map_path;
+  }
+
+}
+
+void GlimROS::handle_initial_pose(
+  const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr msg)
+{
+  Eigen::Quaterniond quat(
+        msg->pose.pose.orientation.w,
+        msg->pose.pose.orientation.x,
+        msg->pose.pose.orientation.y,
+        msg->pose.pose.orientation.z
+  );
+
+  Eigen::Vector3d translation(
+    msg->pose.pose.position.x,
+    msg->pose.pose.position.y,
+    msg->pose.pose.position.z
+  );
+
+  initial_pose_.translation() = translation;
+  initial_pose_.linear() = quat.toRotationMatrix();
+
+  auto latest_frame = odometry_estimation->get_latest_frame();
+
+  global_mapping->relocalize(latest_frame, initial_pose_);
+  force_create_submap_flag = true;
 }
 
 GlimROS::~GlimROS() {

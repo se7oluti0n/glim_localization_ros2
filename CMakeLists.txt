@@ -31,7 +31,7 @@ endif()
 ### glim_ros ###
 ament_auto_add_library(glim_ros SHARED
   src/glim_ros/glim_ros.cpp
-  src/glim_ros/glim_localization.cpp
+  # src/glim_ros/glim_localization.cpp
   src/glim_ros/glim_editor.cpp
 )
 target_include_directories(glim_ros PUBLIC
@@ -72,12 +72,12 @@ target_link_libraries(glim_rosnode
   glim_ros
 )
 
-ament_auto_add_executable(glim_localization
-  src/glim_roslocalization.cpp
-)
-target_link_libraries(glim_localization
-  glim_ros
-)
+# ament_auto_add_executable(glim_localization
+#   src/glim_roslocalization.cpp
+# )
+# target_link_libraries(glim_localization
+#   glim_ros
+# )
 
 ### glim_rosbag ###
 ament_auto_add_executable(glim_rosbag

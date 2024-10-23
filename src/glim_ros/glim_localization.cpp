@@ -28,7 +28,7 @@ GlimLocalization::GlimLocalization(const rclcpp::NodeOptions& options) :
     std::placeholders::_1, std::placeholders::_2));
 
    map_path =
-      glim::Config(glim::GlobalConfig::get_config_path("config_global_mapping")).param<std::string>("global_mapping", "map_path", "/home/manh/glim_ws/dump");
+      glim::Config(glim::GlobalConfig::get_config_path("config_global_mapping")).param<std::string>("localization", "map_path", "/home/manh/glim_ws/dump");
 }
 
 GlimLocalization::~GlimLocalization() {

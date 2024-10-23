@@ -11,6 +11,9 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_srvs/srv/trigger.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+
+#include <Eigen/Geometry>
 
 namespace glim {
 class TimeKeeper;
@@ -41,6 +44,11 @@ public:
   const std::vector<std::shared_ptr<GenericTopicSubscription>>& extension_subscriptions();
   void handle_save_map_sevice(const std_srvs::srv::Trigger::Request::SharedPtr request,
                       std_srvs::srv::Trigger::Response::SharedPtr response);
+private:
+  void setup_localization();
+  void handle_initial_pose(const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose);
+  void handle_load_map_sevice(const std_srvs::srv::Trigger::Request::SharedPtr request,
+                      std_srvs::srv::Trigger::Response::SharedPtr response);
 protected:
   std::unique_ptr<glim::TimeKeeper> time_keeper;
   std::unique_ptr<glim::CloudPreprocessor> preprocessor;
@@ -68,6 +76,13 @@ protected:
   bool force_create_submap_flag = false;
 
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr save_srv;
+
+  // localization
+  rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_sub;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr load_srv;
+  Eigen::Isometry3d initial_pose_;
+
+  std::string map_path;
 
 };
 

@@ -63,9 +63,16 @@ def generate_launch_description():
     )
     use_sim_time = LaunchConfiguration('use_sim_time')
 
-        
     config_launch_arg = DeclareLaunchArgument(
         "config", default_value=TextSubstitution(text="config/velodyne")
+    )
+
+    localization_launch_arg = DeclareLaunchArgument(
+        "localization", default_value='false'
+    )
+
+    map_path_launch_arg = DeclareLaunchArgument(
+        "map_path", default_value="/home/manh/Documents/ThienVanHoc"
     )
 
     urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='yzbot.urdf')
@@ -96,34 +103,15 @@ def generate_launch_description():
         ]
     )
 
-    # urdf_path = '/home/manh/tvc_nav/src/tvc_description/urdf/amr_1lidar.urdf'
-
-    # with open(urdf_path, 'r') as infp:
-    #     robot_desc = infp.read()
-
-    # urdf_node = GroupAction(
-    #     condition=IfCondition(use_sim_time),
-    #     actions=[
-    #         Node(
-    #             package='robot_state_publisher',
-    #             executable='robot_state_publisher',
-    #             name='robot_state_publisher',
-    #             output='screen',
-    #             parameters=[{
-    #                 'use_sim_time': use_sim_time,
-    #                 'robot_description': robot_desc
-    #             }],
-    #         ),
-    #     ]
-    # )
-
     glim_ros_node = Node(
         package='glim_ros',
-        executable='glim_localization',
+        executable='glim_rosnode',
         name='glim_ros',
         parameters=[{
             "config_path": LaunchConfiguration('config'),
-            "use_sim_time": use_sim_time
+            "localization": LaunchConfiguration('localization'),
+            "map_path": LaunchConfiguration('map_path'),
+            "use_sim_time": use_sim_time,
         }],
         output='screen'
     )
@@ -131,6 +119,8 @@ def generate_launch_description():
     ld = LaunchDescription()
     ld.add_action(use_sim_time_arg)
     ld.add_action(config_launch_arg)
+    ld.add_action(localization_launch_arg)
+    ld.add_action(map_path_launch_arg)
     ld.add_action(glim_ros_node)
     ld.add_action(sensor_nodes)
     # ld.add_action(octomap_server)
