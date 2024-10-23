@@ -60,10 +60,6 @@ target_link_libraries(glim_octomap
   ${PCL_LIBRARIES}
 )
 
-target_link_libraries(rviz_viewer
-  glim::standard_viewer
-)
-
 ### glim_rosnode ###
 ament_auto_add_executable(glim_rosnode
   src/glim_rosnode.cpp

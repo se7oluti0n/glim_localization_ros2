@@ -82,23 +82,47 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
   user_event_pub = node.create_publisher<std_msgs::msg::Header>("~/user_event", 10);
   pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/pose", 10);
   submap_pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/submap_pose", 10);
+  load_map_client = node.create_client<std_srvs::srv::Trigger>("~/load_map");
 
   return {};
 }
 
 void RvizViewer::set_callbacks() {
+  logger->info("Rviz viewer: set callbacks");
+
   using std::placeholders::_1;
   using std::placeholders::_2;
   OdometryEstimationCallbacks::on_new_frame.add(std::bind(&RvizViewer::odometry_new_frame, this, _1));
   LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::on_localization_submap, this, _1));
   LocalizationCallbacks::on_update_submap_initial_pose.add(std::bind(&RvizViewer::on_submap_debug, this, _1, _2));
   GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
-  ViewerCallbacks::user_event.add([this](int pose_id){
-    std_msgs::msg::Header msg;
-    msg.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
-    msg.frame_id = std::to_string(pose_id);
-    this->user_event_pub->publish(msg);
-  });
+  int user_event_cb_id = ViewerCallbacks::user_event.add(std::bind(&RvizViewer::on_user_event, this, _1));
+  int on_load_map_cb_id  = ViewerCallbacks::on_load_map.add(std::bind(&RvizViewer::on_user_load_map, this));
+
+  logger->info("Callback id: {}, {}", user_event_cb_id, on_load_map_cb_id);
+}
+
+void RvizViewer::on_user_event(int pose_id) {
+  std_msgs::msg::Header msg;
+  msg.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+  msg.frame_id = std::to_string(pose_id);
+  this->user_event_pub->publish(msg);
+}
+void RvizViewer::on_user_load_map() {
+  logger->info("Handle load map from UI");
+
+  auto request = std::make_shared<std_srvs::srv::Trigger::Request>();
+  auto result = load_map_client->async_send_request(request);
+// Wait for the result.
+  const std::future_status load_map_status = result.wait_for(std::chrono::milliseconds(1000));
+  if(load_map_status != std::future_status::ready)
+  {
+    logger->info("Failed to call Load map");
+  }
+  else {
+    auto res = result.get();
+    logger->info("Load map status: {}", res->message);
+  }
 }
 
 void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) {

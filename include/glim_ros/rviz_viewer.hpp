@@ -16,6 +16,8 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/header.hpp>
 
+#include <std_srvs/srv/trigger.hpp>
+
 #include <glim/odometry/estimation_frame.hpp>
 #include <glim/mapping/sub_map.hpp>
 #include <glim/util/extension_module.hpp>
@@ -46,6 +48,9 @@ private:
   void on_localization_submap(const std::vector<SubMap::Ptr>& submaps);
   void on_submap_debug(gtsam_points::PointCloud::ConstPtr submap, const Eigen::Isometry3d& pose);
   void invoke(const std::function<void()>& task);
+
+  void on_user_event(int pose_id);
+  void on_user_load_map();
 
   void spin_once();
 
@@ -78,6 +83,7 @@ private:
   std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Header>> user_event_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> pose_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> submap_pose_pub;
+  rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr load_map_client;
 
 
   std::mutex trajectory_mutex;

@@ -113,7 +113,9 @@ def generate_launch_description():
             "map_path": LaunchConfiguration('map_path'),
             "use_sim_time": use_sim_time,
         }],
-        output='screen'
+        output='screen',
+        # prefix=["gnome-terminal -- gdb -ex run --args"]
+
     )
 
     ld = LaunchDescription()
