@@ -81,6 +81,7 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
   odom_pub = node.create_publisher<nav_msgs::msg::Odometry>("~/odom", 10);
   user_event_pub = node.create_publisher<std_msgs::msg::Header>("~/user_event", 10);
   pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/pose", 10);
+  point_pub = node.create_publisher<geometry_msgs::msg::Point>("~/relocalize_point", 1);
   submap_pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/submap_pose", 10);
   load_map_client = node.create_client<std_srvs::srv::Trigger>("~/load_map");
 
@@ -96,10 +97,16 @@ void RvizViewer::set_callbacks() {
   LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::on_localization_submap, this, _1));
   LocalizationCallbacks::on_update_submap_initial_pose.add(std::bind(&RvizViewer::on_submap_debug, this, _1, _2));
   GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
-  int user_event_cb_id = ViewerCallbacks::user_event.add(std::bind(&RvizViewer::on_user_event, this, _1));
-  int on_load_map_cb_id  = ViewerCallbacks::on_load_map.add(std::bind(&RvizViewer::on_user_load_map, this));
+  ViewerCallbacks::user_event.add(std::bind(&RvizViewer::on_user_event, this, _1));
+  ViewerCallbacks::on_load_map.add(std::bind(&RvizViewer::on_user_load_map, this));
+  ViewerCallbacks::request_relocalize.add([this](const Eigen::Vector3d& pos) {
+    geometry_msgs::msg::Point point;
+    point.x = pos.x();
+    point.y = pos.y();
+    point.z = pos.z();
 
-  logger->info("Callback id: {}, {}", user_event_cb_id, on_load_map_cb_id);
+    this->point_pub->publish(point);
+  });
 }
 
 void RvizViewer::on_user_event(int pose_id) {

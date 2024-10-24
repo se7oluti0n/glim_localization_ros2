@@ -82,6 +82,7 @@ private:
   std::shared_ptr<rclcpp::Publisher<nav_msgs::msg::Odometry>> odom_pub;
   std::shared_ptr<rclcpp::Publisher<std_msgs::msg::Header>> user_event_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> pose_pub;
+  std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::Point>> point_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> submap_pose_pub;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr load_map_client;
 

@@ -47,6 +47,7 @@ public:
 private:
   void setup_localization();
   void handle_initial_pose(const geometry_msgs::msg::PoseWithCovarianceStamped::ConstSharedPtr pose);
+  void handle_reloc(const geometry_msgs::msg::Point::ConstSharedPtr point);
   void handle_load_map_sevice(const std_srvs::srv::Trigger::Request::SharedPtr request,
                       std_srvs::srv::Trigger::Response::SharedPtr response);
 protected:
@@ -79,6 +80,7 @@ protected:
 
   // localization
   rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr initial_pose_sub;
+  rclcpp::Subscription<geometry_msgs::msg::Point>::SharedPtr reloc_point_sub;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr load_srv;
   Eigen::Isometry3d initial_pose_;
 
