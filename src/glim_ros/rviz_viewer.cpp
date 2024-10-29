@@ -97,6 +97,7 @@ void RvizViewer::set_callbacks() {
   LocalizationCallbacks::on_update_localization_submaps.add(std::bind(&RvizViewer::on_localization_submap, this, _1));
   LocalizationCallbacks::on_update_submap_initial_pose.add(std::bind(&RvizViewer::on_submap_debug, this, _1, _2));
   GlobalMappingCallbacks::on_update_submaps.add(std::bind(&RvizViewer::globalmap_on_update_submaps, this, _1));
+  LocalizationCallbacks::on_update_active_submaps.add(std::bind(&RvizViewer::on_update_active_submaps, this, _1));
   ViewerCallbacks::user_event.add(std::bind(&RvizViewer::on_user_event, this, _1));
   ViewerCallbacks::on_load_map.add(std::bind(&RvizViewer::on_user_load_map, this));
   ViewerCallbacks::request_relocalize.add([this](const Eigen::Vector3d& pos) {
@@ -392,6 +393,92 @@ void RvizViewer::on_localization_submap(const std::vector<SubMap::Ptr>& prebuilt
   });
 }
 
+void RvizViewer::on_update_active_submaps(const std::map<int, SubMap::Ptr>& submaps) {
+  if (submaps.size() == 0)
+    return;
+  const SubMap::ConstPtr latest_submap = std::prev(submaps.end())->second;
+
+  const double stamp_endpoint_R = latest_submap->odom_frames.back()->stamp;
+  const Eigen::Isometry3d T_world_endpoint_R = latest_submap->T_world_origin * latest_submap->T_origin_endpoint_R;
+  {
+    std::lock_guard<std::mutex> lock(trajectory_mutex);
+    trajectory->update_anchor(stamp_endpoint_R, T_world_endpoint_R);
+  }
+
+  // std::vector<Eigen::Isometry3d, Eigen::aligned_allocator<Eigen::Isometry3d>> submap_poses(submaps.size());
+  // for (int i = 0; i < submaps.size(); i++) {
+  //   submap_poses[i] = submaps[i]->T_world_origin;
+  // }
+
+  // Invoke a submap concatenation task in the RvizViewer thread
+  this->submaps.clear();
+  for (auto &item: submaps) {
+    this->submaps.push_back(item.second);
+  }
+
+  // this->submaps = submaps;
+  invoke([this] {
+    // this->submaps.push_back(latest_submap->frame);
+
+    std::mt19937 mt;
+
+    if (!map_pub->get_subscription_count()) {
+      return;
+    }
+
+    // Publish global map every 10 seconds
+    const rclcpp::Time now = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+    // if (now - last_globalmap_pub_time < std::chrono::seconds(10)) {
+    //   return;
+    // }
+    // last_globalmap_pub_time = now;
+
+    // logger->warn("Publishing global map is computationally demanding and not recommended");
+    int total_num_points = 0;
+
+    // int total_num_points = latest_submap->frame->size();
+    // std::deque<gtsam_points::PointCloud::ConstPtr>::iterator it;
+    // for (it = this->submaps.begin(); it != this->submaps.end(); ++it) {
+    //   total_num_points += (*it)->size();
+    // }
+
+    for (auto & submap: this->submaps) {
+      total_num_points += submap->frame->size();
+    }
+
+
+    // Concatenate all the submap points
+    gtsam_points::PointCloudCPU::Ptr merged(new gtsam_points::PointCloudCPU);
+    merged->num_points = total_num_points;
+    merged->points_storage.resize(total_num_points);
+    merged->points = merged->points_storage.data();
+
+    // auto &submap = latest_submap->frame;
+    int begin = 0;
+    // for (it = submaps.begin(); it != submaps.end(); ++it) {
+    //   const auto& submap = *it;
+    //   std::transform(submap->points, submap->points + submap->size(), merged->points + begin, [&](const Eigen::Vector4d& p) {
+    //      return submap->T_world_origin * p; });
+    //   begin += submap->size();
+    // }
+    for (auto & submap: this->submaps) {
+      auto &frame = submap->frame;
+      std::transform(frame->points, frame->points + frame->size(), merged->points + begin, [&](const Eigen::Vector4d& p) {
+         return submap->T_world_origin * p; });
+      begin += frame->size();
+    }
+    // std::transform(submap->points, submap->points + submap->size(), merged->points + begin,
+    //    [&](const Eigen::Vector4d& p) { return latest_submap->T_world_origin * p; });
+
+
+    auto downsampled = gtsam_points::random_sampling(merged, rviz_random_sampling_rate, mt);
+
+    auto points_msg = frame_to_pointcloud2(map_frame_id, now.seconds(), *downsampled);
+    map_pub->publish(*points_msg);
+  });
+}
+
+
 
 void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& submaps) {
   if (submaps.size() == 0)
@@ -428,7 +515,7 @@ void RvizViewer::globalmap_on_update_submaps(const std::vector<SubMap::Ptr>& sub
     // }
     // last_globalmap_pub_time = now;
 
-    logger->warn("Publishing global map is computationally demanding and not recommended");
+    // logger->warn("Publishing global map is computationally demanding and not recommended");
     int total_num_points = 0;
 
     // int total_num_points = latest_submap->frame->size();
