@@ -12,6 +12,7 @@
 #include <sensor_msgs/msg/joint_state.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
 
 #include <Eigen/Geometry>
 
@@ -35,6 +36,7 @@ public:
 
   void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg);
   void raw_odom_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
+  void gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg);
   void image_callback(const sensor_msgs::msg::Image::ConstSharedPtr msg);
   size_t points_callback(const sensor_msgs::msg::PointCloud2::ConstSharedPtr msg);
 
@@ -72,6 +74,7 @@ protected:
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr raw_odom_sub;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr points_sub;
+  rclcpp::Subscription<sensor_msgs::msg::NavSatFix>::SharedPtr gps_sub;
   image_transport::Subscriber image_sub;
 
   bool force_create_submap_flag = false;

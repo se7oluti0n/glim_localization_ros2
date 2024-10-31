@@ -169,6 +169,7 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   const std::string imu_topic = config_ros.param<std::string>("glim_ros", "imu_topic", "");
   const std::string wheel_topic = config_ros.param<std::string>("glim_ros", "wheel_topic", "");
   const std::string points_topic = config_ros.param<std::string>("glim_ros", "points_topic", "");
+  const std::string gps_topic = config_ros.param<std::string>("glim_ros", "gps_topic", "");
   const std::string image_topic = config_ros.param<std::string>("glim_ros", "image_topic", "");
 
   // Subscribers
@@ -177,6 +178,7 @@ GlimROS::GlimROS(const rclcpp::NodeOptions& options) : Node("glim_ros", options)
   imu_sub = this->create_subscription<sensor_msgs::msg::Imu>(imu_topic, imu_qos, std::bind(&GlimROS::imu_callback, this, _1));
   raw_odom_sub = this->create_subscription<sensor_msgs::msg::JointState>(wheel_topic, imu_qos, std::bind(&GlimROS::raw_odom_callback, this, _1));
   points_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(points_topic, rclcpp::SensorDataQoS(), std::bind(&GlimROS::points_callback, this, _1));
+  gps_sub = this->create_subscription<sensor_msgs::msg::NavSatFix>(gps_topic, rclcpp::SensorDataQoS(), std::bind(&GlimROS::gps_callback, this, _1));
   image_sub = image_transport::create_subscription(this, image_topic, std::bind(&GlimROS::image_callback, this, _1), "raw", rmw_qos_profile_sensor_data);
 
   for (const auto& sub : this->extension_subscriptions()) {
@@ -289,11 +291,24 @@ void GlimROS::handle_save_map_sevice(const std_srvs::srv::Trigger::Request::Shar
 
 void GlimROS::raw_odom_callback(const sensor_msgs::msg::JointState::SharedPtr msg) {
   const double odom_stamp = msg->header.stamp.sec + msg->header.stamp.nanosec / 1e9;
-  
+
   double left_vel = msg->velocity[0];
   double right_vel = msg->velocity[1];
   odometry_estimation->insert_raw_odom(odom_stamp, left_vel, right_vel);
 }
+
+void GlimROS::gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
+  const double odom_stamp = msg->header.stamp.sec + msg->header.stamp.nanosec / 1e9;
+
+  odometry_estimation->insert_gps(odom_stamp, msg->latitude, msg->longitude, msg->altitude);
+  if (sub_mapping) {
+    sub_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, msg->altitude);
+  }
+  if (global_mapping) {
+    global_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, msg->altitude);
+  }
+}
+
 
 void GlimROS::imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {
   spdlog::trace("IMU: {}.{}", msg->header.stamp.sec, msg->header.stamp.nanosec);
