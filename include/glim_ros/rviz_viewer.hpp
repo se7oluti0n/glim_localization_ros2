@@ -71,6 +71,7 @@ private:
   std::string odom_frame_id;
   std::string map_frame_id;
   bool publish_imu2lidar;
+  bool publish_active_submaps;
   bool publish_topic_odom;
   double tf_time_offset;
   double rviz_random_sampling_rate;
