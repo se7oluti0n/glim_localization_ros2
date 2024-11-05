@@ -302,7 +302,7 @@ void GlimROS::gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
 
   odometry_estimation->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0, msg->position_covariance[0]);
   if (sub_mapping) {
-    sub_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0);
+    sub_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0, msg->position_covariance[0]);
   }
   if (global_mapping) {
     global_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0,
