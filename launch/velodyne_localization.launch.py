@@ -32,7 +32,7 @@ from launch.actions import     OpaqueFunction
 def urdf_setup(context, *args, **kwargs):
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    urdf_file_name = LaunchConfiguration('urdf_file_name', default='amr.urdf')
+    urdf_file_name = LaunchConfiguration('urdf_file_name', default='yzbot.urdf')
 
     # urdf_path = urdf_file_name.perform(context=context)
     urdf_path = os.path.join(
@@ -61,7 +61,14 @@ def generate_launch_description():
     use_sim_time_arg = DeclareLaunchArgument(
         "use_sim_time", default_value='false'
     )
+
     use_sim_time = LaunchConfiguration('use_sim_time')
+
+    publish_urdf_arg = DeclareLaunchArgument(
+        "publish_urdf", default_value='false'
+    )
+
+    publish_urdf = LaunchConfiguration('publish_urdf')
 
     config_launch_arg = DeclareLaunchArgument(
         "config", default_value=TextSubstitution(text="config/velodyne")
@@ -77,7 +84,7 @@ def generate_launch_description():
 
     urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='yzbot.urdf')
     urdf_node = GroupAction(
-        condition=IfCondition(use_sim_time),
+        condition=IfCondition(publish_urdf),
         actions=[
             OpaqueFunction(function=urdf_setup),
         ]
@@ -100,6 +107,11 @@ def generate_launch_description():
                   get_package_share_directory('velodyne_pointcloud'), 'launch', 'velodyne_transform_node-VLP16-launch.py'
           ))
           ),
+          IncludeLaunchDescription(
+              PythonLaunchDescriptionSource(os.path.join(
+                  get_package_share_directory('tvc_ublox_rtk'), 'launch', 'tvc_ublox_rtk.launch.py'
+          ))
+          ),
         ]
     )
 
@@ -120,6 +132,7 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(use_sim_time_arg)
+    ld.add_action(publish_urdf_arg)
     ld.add_action(config_launch_arg)
     ld.add_action(localization_launch_arg)
     ld.add_action(map_path_launch_arg)
