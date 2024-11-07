@@ -79,7 +79,7 @@ def generate_launch_description():
     )
 
     map_path_launch_arg = DeclareLaunchArgument(
-        "map_path", default_value="/home/manh/Documents/ThienVanHoc"
+        "map_path", default_value="/home/manh/Documents/park_gps"
     )
 
     urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='yzbot.urdf')

@@ -306,7 +306,7 @@ void GlimROS::gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
   }
   if (global_mapping) {
     global_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0,
-      msg->position_covariance[0], msg->position_covariance[4], msg->position_covariance[8]
+      msg->position_covariance[0]
     );
   }
 }

@@ -44,6 +44,7 @@ rclcpp_components_register_nodes(glim_ros "glim::GlimROS")
 
 ament_auto_add_library(rviz_viewer SHARED
   src/glim_ros/rviz_viewer.cpp
+  src/util/LatLong_UTMconversion.cpp
 )
 
 ament_auto_add_library(glim_octomap SHARED
