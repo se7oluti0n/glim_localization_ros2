@@ -1,5 +1,7 @@
 #include <glim_ros/rviz_viewer.hpp>
 
+#include <util/LatLong_UTMconversion.h>
+
 #include <mutex>
 #include <spdlog/spdlog.h>
 #include <rclcpp/clock.hpp>
@@ -85,6 +87,7 @@ std::vector<GenericTopicSubscription::Ptr> RvizViewer::create_subscriptions(rclc
   point_pub = node.create_publisher<geometry_msgs::msg::Point>("~/relocalize_point", 1);
   submap_pose_pub = node.create_publisher<geometry_msgs::msg::PoseStamped>("~/submap_pose", 10);
   load_map_client = node.create_client<std_srvs::srv::Trigger>("~/load_map");
+  tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(node);
 
   return {};
 }
@@ -109,6 +112,34 @@ void RvizViewer::set_callbacks() {
 
     this->point_pub->publish(point);
   });
+
+  SubMappingCallbacks::on_set_gps_origin.add([this](double lat, double lon){
+    int ReferenceEllipsoid = 23; //WGS84
+    double UTMNorthing;
+    double UTMEasting;
+    char UTMZone[10];
+
+    LLtoUTM(ReferenceEllipsoid, lat, lon, UTMNorthing, UTMEasting, UTMZone);
+    logger->info("UTM Initialized: North {}, East {}, Zone {}", UTMNorthing, UTMEasting, UTMZone);
+    
+    geometry_msgs::msg::TransformStamped t;
+
+    t.header.stamp = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
+    t.header.frame_id = "utm";
+    t.child_frame_id = "map";
+
+    t.transform.translation.x = UTMNorthing;
+    t.transform.translation.y = UTMEasting;
+    t.transform.translation.z = 0.0;
+    t.transform.rotation.x = 0.0;
+    t.transform.rotation.y = 0.0;
+    t.transform.rotation.z = 0.0;
+    t.transform.rotation.w = 1.0;
+
+    tf_static_broadcaster_->sendTransform(t);
+  });
+
+
 }
 
 void RvizViewer::on_user_event(int pose_id) {

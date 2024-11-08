@@ -300,13 +300,13 @@ void GlimROS::raw_odom_callback(const sensor_msgs::msg::JointState::SharedPtr ms
 void GlimROS::gps_callback(const sensor_msgs::msg::NavSatFix::SharedPtr msg) {
   const double odom_stamp = msg->header.stamp.sec + msg->header.stamp.nanosec / 1e9;
 
-  odometry_estimation->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0, msg->position_covariance[0]);
+  odometry_estimation->insert_gps(odom_stamp, msg->latitude, msg->longitude, msg->altitude, msg->position_covariance[0]);
   if (sub_mapping) {
-    sub_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0);
+    sub_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, msg->altitude, msg->position_covariance[0]);
   }
   if (global_mapping) {
-    global_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, 0.0,
-      msg->position_covariance[0], msg->position_covariance[4], msg->position_covariance[8]
+    global_mapping->insert_gps(odom_stamp, msg->latitude, msg->longitude, msg->altitude,
+      msg->position_covariance[0]
     );
   }
 }

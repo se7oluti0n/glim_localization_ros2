@@ -15,6 +15,7 @@
 #include <geometry_msgs/msg/pose_stamped.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <std_msgs/msg/header.hpp>
+#include <tf2_ros/static_transform_broadcaster.h>
 
 #include <std_srvs/srv/trigger.hpp>
 
@@ -87,6 +88,7 @@ private:
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::Point>> point_pub;
   std::shared_ptr<rclcpp::Publisher<geometry_msgs::msg::PoseStamped>> submap_pose_pub;
   rclcpp::Client<std_srvs::srv::Trigger>::SharedPtr load_map_client;
+  std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
 
 
   std::mutex trajectory_mutex;
