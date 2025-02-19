@@ -15,6 +15,7 @@
 #include <glim/util/config.hpp>
 #include <glim/util/trajectory_manager.hpp>
 #include <glim/util/ros_cloud_converter.hpp>
+#include <glim/util/convert_to_string.hpp>
 
 namespace glim {
 
@@ -34,6 +35,11 @@ RvizViewer::RvizViewer() : logger(create_module_logger("rviz")) {
   publish_active_submaps = config.param<bool>("glim_ros", "publish_active_submaps", false);
   tf_time_offset = config.param<double>("glim_ros", "tf_time_offset", 1e-6);
   rviz_random_sampling_rate = config.param<double>("glim_ros", "rviz_random_sampling_rate", 0.1);
+
+  Config sensor_config(GlobalConfig::get_config_path("config_sensors"));
+  const auto T_lidar_imu = sensor_config.param<Eigen::Isometry3d>("sensors", "T_lidar_imu", Eigen::Isometry3d::Identity());
+  T_imu_lidar = T_lidar_imu.inverse();
+  logger->info("T_lidar_imu: {}", convert_to_string(T_imu_lidar));
 
   last_globalmap_pub_time = rclcpp::Clock(rcl_clock_type_t::RCL_ROS_TIME).now();
   trajectory.reset(new TrajectoryManager);
@@ -212,13 +218,15 @@ void RvizViewer::odometry_new_frame(const EstimationFrame::ConstPtr& new_frame) 
     tf_broadcaster->sendTransform(trans);
   } else {
     try {
-      const auto trans_imu_base = tf_buffer->lookupTransform(imu_frame_id, base_frame_id, rclcpp::Time(0.), timeout);
-      const auto& t = trans_imu_base.transform.translation;
-      const auto& r = trans_imu_base.transform.rotation;
+      // const auto trans_imu_base = tf_buffer->lookupTransform(imu_frame_id, base_frame_id, rclcpp::Time(0.), timeout);
+      // const auto& t = trans_imu_base.transform.translation;
+      // const auto& r = trans_imu_base.transform.rotation;
+      //
+      // Eigen::Isometry3d T_imu_base = Eigen::Isometry3d::Identity();
+      // T_imu_base.translation() << t.x, t.y, t.z;
+      // T_imu_base.linear() = Eigen::Quaterniond(r.w, r.x, r.y, r.z).toRotationMatrix();
 
-      Eigen::Isometry3d T_imu_base = Eigen::Isometry3d::Identity();
-      T_imu_base.translation() << t.x, t.y, t.z;
-      T_imu_base.linear() = Eigen::Quaterniond(r.w, r.x, r.y, r.z).toRotationMatrix();
+      Eigen::Isometry3d T_imu_base = T_imu_lidar;
 
       const Eigen::Isometry3d T_odom_base = T_odom_imu * T_imu_base;
       const Eigen::Quaterniond quat_odom_base(T_odom_base.linear());
