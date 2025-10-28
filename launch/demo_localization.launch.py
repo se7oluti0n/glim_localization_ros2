@@ -32,7 +32,7 @@ from launch.actions import     OpaqueFunction
 def urdf_setup(context, *args, **kwargs):
 
     use_sim_time = LaunchConfiguration('use_sim_time', default='false')
-    urdf_file_name = LaunchConfiguration('urdf_file_name', default='yzbot.urdf')
+    urdf_file_name = LaunchConfiguration('urdf_file_name', default='liosam.urdf')
 
     # urdf_path = urdf_file_name.perform(context=context)
     urdf_path = os.path.join(
@@ -71,7 +71,7 @@ def generate_launch_description():
     publish_urdf = LaunchConfiguration('publish_urdf')
 
     config_launch_arg = DeclareLaunchArgument(
-        "config", default_value=TextSubstitution(text="config/l515")
+        "config", default_value=TextSubstitution(text="config/liosam/walking")
     )
 
     localization_launch_arg = DeclareLaunchArgument(
@@ -82,7 +82,7 @@ def generate_launch_description():
         "map_path", default_value="/home/manh/Documents/park_gps"
     )
 
-    urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='yzbot.urdf')
+    urdf_arg = DeclareLaunchArgument('urdf_file_name', default_value='liosam.urdf')
     urdf_node = GroupAction(
         condition=IfCondition(publish_urdf),
         actions=[
@@ -90,31 +90,6 @@ def generate_launch_description():
         ]
     )
 
-    # sensor_nodes = GroupAction(
-    #     condition=UnlessCondition(use_sim_time),
-    #     actions=[
-    #       Node(
-    #         package='openzen_driver',
-    #         executable='openzen_node',
-    #         name='openzen_node'),
-    #       IncludeLaunchDescription(
-    #           PythonLaunchDescriptionSource(os.path.join(
-    #               get_package_share_directory('velodyne_driver'), 'launch', 'velodyne_driver_node-VLP16-launch.py'
-    #           ))
-    #       ),
-    #       IncludeLaunchDescription(
-    #           PythonLaunchDescriptionSource(os.path.join(
-    #               get_package_share_directory('velodyne_pointcloud'), 'launch', 'velodyne_transform_node-VLP16-launch.py'
-    #       ))
-    #       ),
-    #       IncludeLaunchDescription(
-    #           PythonLaunchDescriptionSource(os.path.join(
-    #               get_package_share_directory('tvc_ublox_rtk'), 'launch', 'tvc_ublox_rtk.launch.py'
-    #       ))
-    #       ),
-    #     ]
-    # )
-    #
     glim_ros_node = Node(
         package='glim_ros',
         executable='glim_rosnode',
@@ -137,10 +112,8 @@ def generate_launch_description():
     ld.add_action(localization_launch_arg)
     ld.add_action(map_path_launch_arg)
     ld.add_action(glim_ros_node)
-    # ld.add_action(sensor_nodes)
-    # ld.add_action(octomap_server)
     ld.add_action(urdf_arg)
-    # ld.add_action(urdf_node)
+    ld.add_action(urdf_node)
 
     # Add the commands to the launch description
 
